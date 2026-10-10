@@ -1,0 +1,10 @@
+<?php
+require_once __DIR__ . '/../config/database.php';require_once __DIR__ . '/../helpers/auth.php';require_admin();require_once __DIR__ . '/../helpers/escape.php';require_once __DIR__ . '/../helpers/csrf.php';
+$pageTitle='Pengguna';$message='';$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$username=trim($_POST['username']??'');$password=$_POST['password']??'';$role=$_POST['role']??'staff';if(!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/',$username)||strlen($password)<8||!in_array($role,['admin','staff'],true))$error='Username minimal 3 karakter dan password minimal 8 karakter.';else{try{$st=$pdo->prepare('INSERT INTO users(username,password_hash,role) VALUES(?,?,?)');$st->execute([$username,password_hash($password,PASSWORD_DEFAULT),$role]);$message='Pengguna berhasil dibuat.';}catch(PDOException $e){$error='Username sudah digunakan atau data tidak valid.';}}}
+$users=$pdo->query('SELECT id,username,role,created_at FROM users ORDER BY id')->fetchAll();require '_header.php';
+?>
+<h1>Manajemen Pengguna</h1><?php if($message):?><div class="notice"><?=e($message)?></div><?php endif;?><?php if($error):?><div class="error"><?=e($error)?></div><?php endif;?>
+<div class="card"><h2>Tambah Pengguna</h2><form method="post"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><label>Username</label><input name="username" minlength="3" maxlength="50" required><label>Password (minimal 8 karakter)</label><input type="password" name="password" minlength="8" required><label>Role</label><select name="role"><option value="staff">Staff</option><option value="admin">Admin</option></select><div class="actions"><button>Tambah pengguna</button></div></form></div>
+<div class="card"><h2>Daftar Pengguna</h2><div class="table-wrap"><table><tr><th>Username</th><th>Role</th><th>Dibuat</th></tr><?php foreach($users as $u):?><tr><td><?=e($u['username'])?></td><td><?=e($u['role'])?></td><td><?=e($u['created_at'])?></td></tr><?php endforeach;?></table></div></div>
+<?php require '_footer.php';?>
